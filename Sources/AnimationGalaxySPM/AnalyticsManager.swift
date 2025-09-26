@@ -1,5 +1,5 @@
 import Foundation
-import Amplitude
+import AmplitudeSwift
 
 /// Универсальный менеджер аналитики с Amplitude
 public final class AnalyticsManager {

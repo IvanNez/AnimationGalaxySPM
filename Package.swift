@@ -25,7 +25,7 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         .target(
             name: "AnimationGalaxySPM",
-            dependencies: ["Amplitude"]),
+            dependencies: ["Amplitude-Swift"]),
         .testTarget(
             name: "AnimationGalaxySPMTests",
             dependencies: ["AnimationGalaxySPM"]),
