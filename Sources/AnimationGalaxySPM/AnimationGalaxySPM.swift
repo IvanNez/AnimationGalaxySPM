@@ -129,4 +129,76 @@ public struct AnimationGalaxySPM {
     public static func getUserID() -> String {
         return IDGenerator.shared.getUniqueID()
     }
+    
+    /// Показывает alert для уведомлений с переходом в настройки
+    /// - Parameters:
+    ///   - title: Заголовок alert'а
+    ///   - message: Сообщение alert'а
+    ///   - settingsButtonTitle: Текст кнопки настроек
+    ///   - cancelButtonTitle: Текст кнопки отмены
+    public static func showNotificationsAlert(
+        title: String = "Notification are disabled",
+        message: String = "To receive notifications, please enable them in settings.",
+        settingsButtonTitle: String = "Settings",
+        cancelButtonTitle: String = "Cancel"
+    ) {
+        CustomAlertManager.shared.showNotificationsAlert(
+            title: title,
+            message: message,
+            settingsButtonTitle: settingsButtonTitle,
+            cancelButtonTitle: cancelButtonTitle
+        )
+    }
+    
+    /// Показывает кастомный alert с настраиваемыми параметрами
+    /// - Parameters:
+    ///   - title: Заголовок alert'а
+    ///   - message: Сообщение alert'а
+    ///   - primaryButtonTitle: Текст основной кнопки
+    ///   - secondaryButtonTitle: Текст вторичной кнопки
+    ///   - primaryAction: Действие при нажатии на основную кнопку
+    ///   - secondaryAction: Действие при нажатии на вторичную кнопку
+    public static func showCustomAlert(
+        title: String,
+        message: String,
+        primaryButtonTitle: String,
+        secondaryButtonTitle: String? = nil,
+        primaryAction: (() -> Void)? = nil,
+        secondaryAction: (() -> Void)? = nil
+    ) {
+        CustomAlertManager.shared.showCustomAlert(
+            title: title,
+            message: message,
+            primaryButtonTitle: primaryButtonTitle,
+            secondaryButtonTitle: secondaryButtonTitle,
+            primaryAction: primaryAction,
+            secondaryAction: secondaryAction
+        )
+    }
+    
+    /// Показывает alert с подтверждением действия
+    /// - Parameters:
+    ///   - title: Заголовок alert'а
+    ///   - message: Сообщение alert'а
+    ///   - confirmTitle: Текст кнопки подтверждения
+    ///   - cancelTitle: Текст кнопки отмены
+    ///   - onConfirm: Действие при подтверждении
+    ///   - onCancel: Действие при отмене
+    public static func showConfirmationAlert(
+        title: String,
+        message: String,
+        confirmTitle: String = "OK",
+        cancelTitle: String = "Cancel",
+        onConfirm: @escaping () -> Void,
+        onCancel: (() -> Void)? = nil
+    ) {
+        CustomAlertManager.shared.showConfirmationAlert(
+            title: title,
+            message: message,
+            confirmTitle: confirmTitle,
+            cancelTitle: cancelTitle,
+            onConfirm: onConfirm,
+            onCancel: onCancel
+        )
+    }
 }
