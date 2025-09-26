@@ -44,12 +44,38 @@ public class ContentAvailabilityChecker {
         // Проверяем кэш - уже показывали внешний контент
         if UserDefaults.standard.bool(forKey: hasShownExternalKey) {
             let savedUrl = UserDefaults.standard.string(forKey: savedUrlKey) ?? url
-            print("✅ Кэш: Уже показывали внешний контент, возвращаем сохраненный URL")
-            return ContentCheckResult(
-                shouldShowExternalContent: true,
-                finalUrl: savedUrl,
-                reason: "Cached external content"
-            )
+            print("✅ Кэш: Уже показывали внешний контент, проверяем сохраненный URL")
+            
+            // Валидируем сохраненный URL
+            let validationResult = validateSavedUrl(savedUrl: savedUrl, originalUrl: url, timeout: timeout)
+            if validationResult.isValid {
+                print("✅ Сохраненный URL валиден, возвращаем его")
+                return ContentCheckResult(
+                    shouldShowExternalContent: true,
+                    finalUrl: validationResult.finalUrl,
+                    reason: "Valid cached external content"
+                )
+            } else {
+                print("❌ Сохраненный URL не валиден, запрашиваем новый с path_id")
+                // Запрашиваем новый URL с path_id
+                let newUrlResult = requestNewUrlWithPathId(originalUrl: url, timeout: timeout)
+                if newUrlResult.success {
+                    print("✅ Получен новый URL, сохраняем и возвращаем")
+                    UserDefaults.standard.set(newUrlResult.finalUrl, forKey: savedUrlKey)
+                    return ContentCheckResult(
+                        shouldShowExternalContent: true,
+                        finalUrl: newUrlResult.finalUrl,
+                        reason: "New URL with path_id"
+                    )
+                } else {
+                    print("❌ Не удалось получить новый URL, возвращаем пустой")
+                    return ContentCheckResult(
+                        shouldShowExternalContent: true,
+                        finalUrl: "",
+                        reason: "Failed to get new URL, show empty WebView"
+                    )
+                }
+            }
         }
         
         // Проверяем кэш - уже показывали приложение
@@ -110,7 +136,7 @@ public class ContentAvailabilityChecker {
         
         // Проверка 4: Серверный код
         print("🌐 Проверяем серверный код...")
-        let serverResult = checkServerResponse(url: url, timeout: timeout)
+        let serverResult = checkServerResponseWithPathId(url: url, timeout: timeout)
         if !serverResult.success {
             print("❌ Не прошли код: \(serverResult.reason)")
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
@@ -191,6 +217,129 @@ public class ContentAvailabilityChecker {
                 }
             } else {
                 result = (false, "", "Invalid response")
+            }
+        }
+        
+        task.resume()
+        _ = semaphore.wait(timeout: .now() + timeout)
+        
+        return result
+    }
+    
+    private static func checkServerResponseWithPathId(url: String, timeout: TimeInterval) -> (success: Bool, finalUrl: String, reason: String) {
+        guard let requestUrl = URL(string: url) else {
+            return (false, "", "Invalid URL")
+        }
+        
+        let redirectHandler = ContentRedirectHandler()
+        let session = URLSession(configuration: .default, delegate: redirectHandler, delegateQueue: nil)
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        var result = (success: false, finalUrl: "", reason: "Unknown error")
+        
+        let task = session.dataTask(with: requestUrl) { data, response, error in
+            defer { semaphore.signal() }
+            
+            if let error = error {
+                result = (false, "", "Network error: \(error.localizedDescription)")
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                if (200...403).contains(httpResponse.statusCode) {
+                    result = (true, redirectHandler.finalUrl, "Success")
+                    
+                    // Сохраняем path_id если есть
+                    if let components = URLComponents(url: requestUrl, resolvingAgainstBaseURL: false),
+                       let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
+                        let pathIdKey = "savedPathId_\(url.hash)"
+                        UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
+                        print("💾 Сохранен path_id: \(pathIdItem.value ?? "")")
+                    }
+                } else {
+                    result = (false, "", "Server error: \(httpResponse.statusCode)")
+                }
+            } else {
+                result = (false, "", "Invalid response")
+            }
+        }
+        
+        task.resume()
+        _ = semaphore.wait(timeout: .now() + timeout)
+        
+        return result
+    }
+    
+    // MARK: - URL Validation and Path ID Methods
+    
+    private static func validateSavedUrl(savedUrl: String, originalUrl: String, timeout: TimeInterval) -> (isValid: Bool, finalUrl: String) {
+        print("🔍 Валидируем сохраненный URL: \(savedUrl)")
+        
+        let validationResult = checkServerResponse(url: savedUrl, timeout: timeout)
+        if validationResult.success {
+            print("✅ Сохраненный URL валиден")
+            return (true, validationResult.finalUrl)
+        } else {
+            print("❌ Сохраненный URL не валиден: \(validationResult.reason)")
+            return (false, savedUrl)
+        }
+    }
+    
+    private static func requestNewUrlWithPathId(originalUrl: String, timeout: TimeInterval) -> (success: Bool, finalUrl: String) {
+        print("🔄 Запрашиваем новый URL с path_id")
+        
+        // Получаем сохраненный path_id
+        let pathIdKey = "savedPathId_\(originalUrl.hash)"
+        let savedPathId = UserDefaults.standard.string(forKey: pathIdKey) ?? ""
+        
+        var urlString = originalUrl
+        if !savedPathId.isEmpty {
+            if urlString.contains("?") {
+                urlString += "&pathid=\(savedPathId)"
+            } else {
+                urlString += "?pathid=\(savedPathId)"
+            }
+        }
+        
+        print("🌐 Запрашиваем URL с path_id: \(urlString)")
+        
+        let redirectHandler = ContentRedirectHandler()
+        let session = URLSession(configuration: .default, delegate: redirectHandler, delegateQueue: nil)
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        var result = (success: false, finalUrl: "")
+        
+        guard let url = URL(string: urlString) else {
+            print("❌ Неверный URL: \(urlString)")
+            return (false, "")
+        }
+        
+        let task = session.dataTask(with: url) { data, response, error in
+            defer { semaphore.signal() }
+            
+            if let error = error {
+                print("❌ Ошибка сети: \(error.localizedDescription)")
+                result = (false, "")
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📊 Статус ответа: \(httpResponse.statusCode)")
+                if (200...403).contains(httpResponse.statusCode) {
+                    result = (true, redirectHandler.finalUrl)
+                    // Сохраняем новый path_id если есть
+                    if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                       let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
+                        UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
+                        print("💾 Сохранен новый path_id: \(pathIdItem.value ?? "")")
+                    }
+                } else {
+                    print("❌ Сервер вернул ошибку: \(httpResponse.statusCode)")
+                    result = (false, "")
+                }
+            } else {
+                print("❌ Неверный ответ сервера")
+                result = (false, "")
             }
         }
         
