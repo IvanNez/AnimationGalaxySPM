@@ -1,5 +1,5 @@
 import Foundation
-import AmplitudeSwift
+// import AmplitudeSwift
 
 /// Универсальный менеджер аналитики с Amplitude
 public final class AnalyticsManager {
@@ -12,6 +12,10 @@ public final class AnalyticsManager {
     /// Инициализация Amplitude (вызывается один раз)
     /// - Parameter apiKey: API ключ Amplitude
     public func initialize(apiKey: String) {
+        // Amplitude временно отключен
+        print("📊 AnalyticsManager: Amplitude временно отключен")
+        
+        /*
         let configuration = Configuration(
             apiKey: apiKey,
             defaultTracking: DefaultTrackingOptions.ALL
@@ -23,6 +27,7 @@ public final class AnalyticsManager {
         amplitudeSwift?.setUserId(userId: userId)
         
         print("📊 AnalyticsManager инициализирован с API ключом")
+        */
     }
     
     /// Отправка события с именем и свойствами
@@ -35,6 +40,10 @@ public final class AnalyticsManager {
         // Добавляем userID в каждое событие
         props["userID"] = IDGenerator.shared.getUniqueID()
         
+        // Amplitude временно отключен - только логируем
+        print("📊 Событие (Amplitude отключен): \(name) с свойствами: \(props)")
+        
+        /*
         guard let amplitude = amplitudeSwift else {
             print("❌ AnalyticsManager не инициализирован")
             return
@@ -42,6 +51,7 @@ public final class AnalyticsManager {
         
         amplitude.track(eventType: name, eventProperties: props)
         print("📊 Отправлено событие: \(name) с свойствами: \(props)")
+        */
     }
     
     /// Отправка события с одним свойством
