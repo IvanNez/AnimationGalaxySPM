@@ -5,29 +5,23 @@ import PackageDescription
 
 let package = Package(
     name: "AnimationGalaxySPM",
-    platforms: [
-        .iOS(.v15),
-        .macOS(.v12),
-        .watchOS(.v8),
-        .tvOS(.v15)
-    ],
+    platforms: [.iOS(.v15), .macOS(.v12), .watchOS(.v8), .tvOS(.v15)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "AnimationGalaxySPM",
-            targets: ["AnimationGalaxySPM"]),
+        .library(name: "AnimationGalaxySPM", targets: ["AnimationGalaxySPM"]),
     ],
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/amplitude/Amplitude-Swift", from: "1.0.0"),
+        .package(url: "https://github.com/amplitude/Amplitude-Swift", from: "1.15.0"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
         .target(
             name: "AnimationGalaxySPM",
-            dependencies: ["Amplitude-Swift"]),
+            dependencies: [
+                .product(name: "AmplitudeSwift", package: "Amplitude-Swift") // ← вот так
+            ]
+        ),
         .testTarget(
             name: "AnimationGalaxySPMTests",
-            dependencies: ["AnimationGalaxySPM"]),
+            dependencies: ["AnimationGalaxySPM"]
+        ),
     ]
 )
