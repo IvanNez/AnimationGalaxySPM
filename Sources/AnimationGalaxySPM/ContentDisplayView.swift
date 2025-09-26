@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import UIKit
 
 /// Конфигурация для отображения веб-контента
 public struct ContentDisplayView: UIViewRepresentable {
@@ -20,7 +21,7 @@ public struct ContentDisplayView: UIViewRepresentable {
         // Настройка JavaScript
         galaxyPreferences.allowsContentJavaScript = true
         galaxyConfig.defaultWebpagePreferences = galaxyPreferences
-        
+        galaxyConfig.preferences.javaScriptCanOpenWindowsAutomatically = true
         // Настройка медиа
         galaxyConfig.allowsInlineMediaPlayback = true
         galaxyConfig.mediaTypesRequiringUserActionForPlayback = []
@@ -52,13 +53,19 @@ public struct ContentDisplayView: UIViewRepresentable {
         context.coordinator.galaxyWVView = galaxyView
         context.coordinator.galaxyRefreshControl = galaxyRefreshControl
         
+        if let url = URL(string: urlString) {
+            galaxyView.load(URLRequest(url: url))
+        }
+        
         return galaxyView
     }
     
     public func updateUIView(_ uiView: WKWebView, context: Context) {
-        guard let url = URL(string: urlString) else { return }
-        let request = URLRequest(url: url)
-        uiView.load(request)
+        // ⚠️ НЕ перезагружаем на каждый апдейт SwiftUI
+        // Загружаем только если реально сменился URL
+        if uiView.url?.absoluteString != urlString, let url = URL(string: urlString) {
+            uiView.load(URLRequest(url: url))
+        }
     }
     
     public func makeCoordinator() -> Coordinator {
@@ -82,53 +89,43 @@ public struct ContentDisplayView: UIViewRepresentable {
         }
         
         // Обработка навигации
-        public func webView(_ galaxyWebView: WKWebView, decidePolicyFor galaxyNavigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            // Мусорный код для уникализации
-            let galaxyVar1 = 122
-            let galaxyVar2 = 3222
-            if 12 > 32 {
-                // Пустой блок
-            }
-            
-            if let galaxyUrl = galaxyNavigationAction.request.url {
-                let galaxyScheme = galaxyUrl.scheme?.lowercased()
-                let galaxyUrlString = galaxyUrl.absoluteString.lowercased()
+        public func webView(_ webView: WKWebView,
+                            decidePolicyFor action: WKNavigationAction,
+                            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            if let url = action.request.url {
+                let scheme = url.scheme?.lowercased()
+                let urlStr = url.absoluteString.lowercased()
                 
-                if let galaxyScheme = galaxyScheme,
-                   galaxyScheme != "http", galaxyScheme != "https", galaxyScheme != "about" {
-                    if galaxyScheme == "itms-apps" || galaxyUrlString.contains("apps.apple.com") {
-                        UIApplication.shared.open(galaxyUrl, options: [:], completionHandler: nil)
-                        decisionHandler(.cancel)
-                        return
-                    }
-                    
-                    UIApplication.shared.open(galaxyUrl, options: [:], completionHandler: nil)
+                // Открываем внешние схемы в системе
+                if let scheme = scheme,
+                   scheme != "http", scheme != "https", scheme != "about" {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                    decisionHandler(.cancel)
+                    return
+                }
+                
+                // ✅ Фоллбек: если target="_blank" и по какой-то причине не вызвался createWebViewWith
+                if action.targetFrame == nil {
+                    webView.load(URLRequest(url: url))
                     decisionHandler(.cancel)
                     return
                 }
             }
-            
             decisionHandler(.allow)
         }
         
         // Обработка дочерних окон
-        public func webView(_ galaxyDisplayView: WKWebView, createWebViewWith galaxyDisplayConfiguration: WKWebViewConfiguration, for galaxyDisplayNavigationAction: WKNavigationAction, windowFeatures galaxyDisplayWindowFeatures: WKWindowFeatures) -> WKWebView? {
-            
-            // Мусорный код
-            let spaceVar1 = 456
-            let spaceVar2 = 789
-            if 15 < 25 {
-                // Пустой блок
-            }
-            
-            if galaxyDisplayNavigationAction.targetFrame == nil {
-                if let galaxyDisplayUrl = galaxyDisplayNavigationAction.request.url {
-                    let galaxyDisplayRequest = URLRequest(url: galaxyDisplayUrl)
-                    galaxyDisplayView.load(galaxyDisplayRequest)
-                }
+        public func webView(_ webView: WKWebView,
+                            createWebViewWith configuration: WKWebViewConfiguration,
+                            for navAction: WKNavigationAction,
+                            windowFeatures: WKWindowFeatures) -> WKWebView? {
+            // Открываем «новое окно» в том же webView
+            if navAction.targetFrame == nil, let url = navAction.request.url {
+                webView.load(URLRequest(url: url))
             }
             return nil
         }
+        
         
         // Обработка начала навигации
         public func webView(_ galaxyWebView: WKWebView, didStartProvisionalNavigation galaxyNavigation: WKNavigation!) {
