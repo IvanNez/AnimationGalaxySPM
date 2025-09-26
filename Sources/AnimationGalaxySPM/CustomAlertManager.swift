@@ -25,24 +25,37 @@ public final class CustomAlertManager {
             preferredStyle: .alert
         )
         
+        print("🔍 Ищем root view controller...")
         guard
             let windowScene = UIApplication.shared.connectedScenes
-                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-            let rootVC = windowScene.windows
-                .first(where: { $0.isKeyWindow })?.rootViewController
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
         else {
-            print("❌ Не удалось найти root view controller для показа alert")
+            print("❌ Не удалось найти активную window scene")
             return
         }
         
+        print("🔍 Найдена window scene, ищем root view controller...")
+        guard let rootVC = windowScene.windows.first?.rootViewController else {
+            print("❌ Не удалось найти root view controller")
+            return
+        }
+        
+        print("✅ Найден root view controller: \(type(of: rootVC))")
+        
         // Кнопка "Settings"
         alert.addAction(UIAlertAction(title: settingsButtonTitle, style: .default) { _ in
-            if let settingsURL = URL(string: UIApplication.openSettingsURLString),
-               UIApplication.shared.canOpenURL(settingsURL) {
-                UIApplication.shared.open(settingsURL)
-                print("📱 Переход в настройки приложения")
+            print("🔧 Нажата кнопка Settings")
+            if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                print("🔧 URL настроек: \(settingsURL)")
+                if UIApplication.shared.canOpenURL(settingsURL) {
+                    print("🔧 Можем открыть URL настроек")
+                    UIApplication.shared.open(settingsURL)
+                    print("📱 Переход в настройки приложения")
+                } else {
+                    print("❌ Не можем открыть URL настроек")
+                }
             } else {
-                print("❌ Не удалось открыть настройки")
+                print("❌ Не удалось создать URL настроек")
             }
         })
         
@@ -80,8 +93,7 @@ public final class CustomAlertManager {
         guard
             let windowScene = UIApplication.shared.connectedScenes
                 .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-            let rootVC = windowScene.windows
-                .first(where: { $0.isKeyWindow })?.rootViewController
+            let rootVC = windowScene.windows.first?.rootViewController
         else {
             print("❌ Не удалось найти root view controller для показа alert")
             return
