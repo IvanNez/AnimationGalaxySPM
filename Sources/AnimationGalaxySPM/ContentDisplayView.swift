@@ -135,6 +135,9 @@ public struct ContentDisplayView: UIViewRepresentable {
         // Обработка завершения загрузки
         public func webView(_ galaxyWebView: WKWebView, didFinish galaxyNavigation: WKNavigation!) {
             galaxyRefreshControl?.endRefreshing()
+            
+            // Трекинг события загрузки страницы
+            EventTracker.shared.track("wv_page", key: "link", value: galaxyWebView.url?.absoluteString ?? "missing_url")
         }
         
         // Обработка ошибок загрузки

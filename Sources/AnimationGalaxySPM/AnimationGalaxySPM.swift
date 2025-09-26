@@ -70,4 +70,63 @@ public struct AnimationGalaxySPM {
             enableRefresh: enableRefresh
         )
     }
+    
+    /// Проверяет доступность внешнего контента с кэшированием результатов
+    /// - Parameters:
+    ///   - url: URL для проверки
+    ///   - targetDate: Целевая дата (контент доступен только после этой даты)
+    ///   - deviceCheck: Проверять ли тип устройства (iPad исключается)
+    ///   - timeout: Таймаут для сетевых запросов
+    ///   - cacheKey: Уникальный ключ для кэширования
+    /// - Returns: Результат проверки с флагом показа и финальным URL
+    public static func checkContentAvailability(
+        url: String,
+        targetDate: Date,
+        deviceCheck: Bool = true,
+        timeout: TimeInterval = 10.0,
+        cacheKey: String? = nil
+    ) -> ContentAvailabilityChecker.ContentCheckResult {
+        return ContentAvailabilityChecker.checkContentAvailability(
+            url: url,
+            targetDate: targetDate,
+            deviceCheck: deviceCheck,
+            timeout: timeout,
+            cacheKey: cacheKey
+        )
+    }
+    
+    /// Инициализирует систему аналитики Amplitude
+    /// - Parameter apiKey: API ключ Amplitude
+    public static func initializeAnalytics(apiKey: String) {
+        AnalyticsManager.shared.initialize(apiKey: apiKey)
+    }
+    
+    /// Отправляет событие аналитики
+    /// - Parameter name: Название события
+    public static func trackEvent(_ name: String) {
+        EventTracker.shared.track(name)
+    }
+    
+    /// Отправляет событие аналитики с одним свойством
+    /// - Parameters:
+    ///   - name: Название события
+    ///   - key: Ключ свойства
+    ///   - value: Значение свойства
+    public static func trackEvent(_ name: String, key: String, value: Any) {
+        EventTracker.shared.track(name, key: key, value: value)
+    }
+    
+    /// Отправляет событие аналитики с несколькими свойствами
+    /// - Parameters:
+    ///   - name: Название события
+    ///   - properties: Словарь свойств
+    public static func trackEvent(_ name: String, properties: [String: Any]) {
+        EventTracker.shared.track(name, properties: properties)
+    }
+    
+    /// Получает уникальный ID пользователя
+    /// - Returns: Уникальный ID пользователя
+    public static func getUserID() -> String {
+        return IDGenerator.shared.getUniqueID()
+    }
 }
