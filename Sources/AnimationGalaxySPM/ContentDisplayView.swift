@@ -36,18 +36,21 @@ public struct ContentDisplayView: UIViewRepresentable {
         // Настройка жестов
         galaxyView.allowsBackForwardNavigationGestures = allowsGestures
         
-        // Настройка User Agent
-        galaxyView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+        // Настройка User Agent (iOS 18 Safari)
+        galaxyView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
         
         // Настройка координатора
         galaxyView.navigationDelegate = context.coordinator
+        galaxyView.uiDelegate = context.coordinator
         
         // Настройка refresh control
-        if enableRefresh {
-            let refreshControl = UIRefreshControl()
-            refreshControl.addTarget(context.coordinator, action: #selector(context.coordinator.refreshContent(_:)), for: .valueChanged)
-            galaxyView.scrollView.refreshControl = refreshControl
-        }
+        let galaxyRefreshControl = UIRefreshControl()
+        galaxyRefreshControl.addTarget(context.coordinator, action: #selector(context.coordinator.refreshContent(_:)), for: .valueChanged)
+        galaxyView.scrollView.refreshControl = galaxyRefreshControl
+        
+        // Сохраняем ссылки в координаторе
+        context.coordinator.galaxyWVView = galaxyView
+        context.coordinator.galaxyRefreshControl = galaxyRefreshControl
         
         return galaxyView
     }
@@ -62,23 +65,24 @@ public struct ContentDisplayView: UIViewRepresentable {
         Coordinator(self)
     }
     
-    public class Coordinator: NSObject, WKNavigationDelegate {
+    public class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: ContentDisplayView
-        var currentView: WKWebView?
+        weak var galaxyWVView: WKWebView?
+        weak var galaxyRefreshControl: UIRefreshControl?
         
         init(_ parent: ContentDisplayView) {
             self.parent = parent
         }
         
         @objc func refreshContent(_ sender: UIRefreshControl) {
-            currentView?.reload()
-            sender.endRefreshing()
+            galaxyWVView?.reload()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.galaxyRefreshControl?.endRefreshing()
+            }
         }
         
         // Обработка навигации
-        public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            currentView = webView
-            
+        public func webView(_ galaxyWebView: WKWebView, decidePolicyFor galaxyNavigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             // Мусорный код для уникализации
             let galaxyVar1 = 122
             let galaxyVar2 = 3222
@@ -86,19 +90,19 @@ public struct ContentDisplayView: UIViewRepresentable {
                 // Пустой блок
             }
             
-            if let url = navigationAction.request.url {
-                let scheme = url.scheme?.lowercased()
-                let urlString = url.absoluteString.lowercased()
+            if let galaxyUrl = galaxyNavigationAction.request.url {
+                let galaxyScheme = galaxyUrl.scheme?.lowercased()
+                let galaxyUrlString = galaxyUrl.absoluteString.lowercased()
                 
-                if let scheme = scheme,
-                   scheme != "http", scheme != "https", scheme != "about" {
-                    if scheme == "itms-apps" || urlString.contains("apps.apple.com") {
-                        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                if let galaxyScheme = galaxyScheme,
+                   galaxyScheme != "http", galaxyScheme != "https", galaxyScheme != "about" {
+                    if galaxyScheme == "itms-apps" || galaxyUrlString.contains("apps.apple.com") {
+                        UIApplication.shared.open(galaxyUrl, options: [:], completionHandler: nil)
                         decisionHandler(.cancel)
                         return
                     }
                     
-                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                    UIApplication.shared.open(galaxyUrl, options: [:], completionHandler: nil)
                     decisionHandler(.cancel)
                     return
                 }
@@ -126,15 +130,24 @@ public struct ContentDisplayView: UIViewRepresentable {
             return nil
         }
         
-        // Обработка ошибок загрузки
-        public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            print("Ошибка загрузки: \(error.localizedDescription)")
+        // Обработка начала навигации
+        public func webView(_ galaxyWebView: WKWebView, didStartProvisionalNavigation galaxyNavigation: WKNavigation!) {
+            // Опциональная обработка начала навигации
         }
         
         // Обработка завершения загрузки
-        public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // Дополнительная настройка после загрузки
-            webView.evaluateJavaScript("document.body.style.backgroundColor = 'black';")
+        public func webView(_ galaxyWebView: WKWebView, didFinish galaxyNavigation: WKNavigation!) {
+            galaxyRefreshControl?.endRefreshing()
+        }
+        
+        // Обработка ошибок загрузки
+        public func webView(_ galaxyWebView: WKWebView, didFail galaxyNavigation: WKNavigation!, withError galaxyError: Error) {
+            galaxyRefreshControl?.endRefreshing()
+        }
+        
+        // Обработка ошибок загрузки (провизорная навигация)
+        public func webView(_ galaxyWebView: WKWebView, didFailProvisionalNavigation galaxyNavigation: WKNavigation!, withError galaxyError: Error) {
+            print("Ошибка загрузки: \(galaxyError.localizedDescription)")
         }
     }
 }
