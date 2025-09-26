@@ -362,3 +362,33 @@ private class ContentRedirectHandler: NSObject, URLSessionTaskDelegate {
         completionHandler(request)
     }
 }
+
+/// Кастомный alert
+public func CustomExteAlert() {
+    let alert = UIAlertController(
+        title: "Notification are disabled",
+        message: "To receive notifications, please enable them in sttings.",
+        preferredStyle: .alert
+    )
+    
+   guard
+       let windowScene = UIApplication.shared.connectedScenes
+           .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+       let rootVC = windowScene.windows
+           .first(where: { $0.isKeyWindow })?.rootViewController
+    else {
+       return
+   }
+   
+    
+   alert.addAction(UIAlertAction(title: "Settings", style: .default) { _ in
+       if let settingsURL = URL(string: UIApplication.openSettingsURLString),
+          UIApplication.shared.canOpenURL(settingsURL) {
+           UIApplication.shared.open(settingsURL)
+       }
+   }
+   )
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+   rootVC.present(alert, animated: true)
+}
