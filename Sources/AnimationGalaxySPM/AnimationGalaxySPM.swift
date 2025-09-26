@@ -131,23 +131,8 @@ public struct AnimationGalaxySPM {
     }
     
     /// Показывает alert для уведомлений с переходом в настройки
-    /// - Parameters:
-    ///   - title: Заголовок alert'а
-    ///   - message: Сообщение alert'а
-    ///   - settingsButtonTitle: Текст кнопки настроек
-    ///   - cancelButtonTitle: Текст кнопки отмены
-    public static func showNotificationsAlert(
-        title: String = "Notification are disabled",
-        message: String = "To receive notifications, please enable them in settings.",
-        settingsButtonTitle: String = "Settings",
-        cancelButtonTitle: String = "Cancel"
-    ) {
-        CustomAlertManager.shared.showNotificationsAlert(
-            title: title,
-            message: message,
-            settingsButtonTitle: settingsButtonTitle,
-            cancelButtonTitle: cancelButtonTitle
-        )
+    public static func showNotificationsAlert() {
+        CustomAlertManager.shared.showNotificationsAlert()
     }
     
     /// Показывает кастомный alert с настраиваемыми параметрами

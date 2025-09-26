@@ -176,8 +176,9 @@ public struct SafeContentDisplayView: View {
                 allowsGestures: allowsGestures,
                 enableRefresh: enableRefresh
             )
-            .padding(.top, 20) // Отступ сверху
-            .padding(.bottom, 20) // Отступ снизу
+            .onAppear {
+                EventTracker.shared.track("WV_LAUNCH")
+            }
         }
     }
 }

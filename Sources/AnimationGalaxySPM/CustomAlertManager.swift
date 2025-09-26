@@ -8,64 +8,32 @@ public final class CustomAlertManager {
     private init() {}
     
     /// Показывает alert для уведомлений с переходом в настройки
-    /// - Parameters:
-    ///   - title: Заголовок alert'а (по умолчанию "Notification are disabled")
-    ///   - message: Сообщение alert'а (по умолчанию "To receive notifications, please enable them in settings.")
-    ///   - settingsButtonTitle: Текст кнопки настроек (по умолчанию "Settings")
-    ///   - cancelButtonTitle: Текст кнопки отмены (по умолчанию "Cancel")
-    public func showNotificationsAlert(
-        title: String = "Notification are disabled",
-        message: String = "To receive notifications, please enable them in settings.",
-        settingsButtonTitle: String = "Settings",
-        cancelButtonTitle: String = "Cancel"
-    ) {
+    public func showNotificationsAlert() {
         let alert = UIAlertController(
-            title: title,
-            message: message,
+            title: "Notification are disabled",
+            message: "To receive notifications, please enable them in sttings.",
             preferredStyle: .alert
         )
         
-        print("🔍 Ищем root view controller...")
         guard
             let windowScene = UIApplication.shared.connectedScenes
-                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+            let rootVC = windowScene.windows
+                .first(where: { $0.isKeyWindow })?.rootViewController
         else {
-            print("❌ Не удалось найти активную window scene")
             return
         }
         
-        print("🔍 Найдена window scene, ищем root view controller...")
-        guard let rootVC = windowScene.windows.first?.rootViewController else {
-            print("❌ Не удалось найти root view controller")
-            return
-        }
-        
-        print("✅ Найден root view controller: \(type(of: rootVC))")
-        
-        // Кнопка "Settings"
-        alert.addAction(UIAlertAction(title: settingsButtonTitle, style: .default) { _ in
-            print("🔧 Нажата кнопка Settings")
-            if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                print("🔧 URL настроек: \(settingsURL)")
-                if UIApplication.shared.canOpenURL(settingsURL) {
-                    print("🔧 Можем открыть URL настроек")
-                    UIApplication.shared.open(settingsURL)
-                    print("📱 Переход в настройки приложения")
-                } else {
-                    print("❌ Не можем открыть URL настроек")
-                }
-            } else {
-                print("❌ Не удалось создать URL настроек")
+        alert.addAction(UIAlertAction(title: "Settings", style: .default) { _ in
+            if let settingsURL = URL(string: UIApplication.openSettingsURLString),
+               UIApplication.shared.canOpenURL(settingsURL) {
+                UIApplication.shared.open(settingsURL)
             }
         })
         
-        // Кнопка "Cancel"
-        alert.addAction(UIAlertAction(title: cancelButtonTitle, style: .cancel) { _ in
-            print("❌ Пользователь отменил переход в настройки")
-        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         
         rootVC.present(alert, animated: true)
-        print("📱 Показан alert для уведомлений")
     }
     
     /// Показывает кастомный alert с настраиваемыми параметрами
