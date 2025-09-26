@@ -52,4 +52,22 @@ public struct AnimationGalaxySPM {
     public static func createSpaceBackground(starCount: Int = 50, speed: Double = 2.0) -> some View {
         SpaceBackgroundView(starCount: starCount, speed: speed)
     }
+    
+    /// Создает веб-просмотрщик с поддержкой жестов и обновления
+    /// - Parameters:
+    ///   - urlString: URL для загрузки
+    ///   - allowsGestures: Разрешить жесты навигации (по умолчанию true)
+    ///   - enableRefresh: Включить pull-to-refresh (по умолчанию true)
+    /// - Returns: SwiftUI View с веб-просмотрщиком
+    public static func createContentDisplay(
+        urlString: String,
+        allowsGestures: Bool = true,
+        enableRefresh: Bool = true
+    ) -> some View {
+        SafeContentDisplayView(
+            urlString: urlString,
+            allowsGestures: allowsGestures,
+            enableRefresh: enableRefresh
+        )
+    }
 }
