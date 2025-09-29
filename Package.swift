@@ -11,12 +11,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/amplitude/Amplitude-Swift", from: "1.15.0"),
+        .package(url: "https://github.com/OneSignal/OneSignal-XCFramework", from: "5.0.0"),
     ],
     targets: [
         .target(
             name: "AnimationGalaxySPM",
             dependencies: [
-                .product(name: "AmplitudeSwift", package: "Amplitude-Swift") // ← вот так
+                .product(name: "AmplitudeSwift", package: "Amplitude-Swift"),
+                .product(name: "OneSignalFramework", package: "OneSignal-XCFramework")
             ]
         ),
         .testTarget(

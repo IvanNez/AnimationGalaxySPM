@@ -12,6 +12,7 @@
 - 🔍 Универсальная система проверки доступности внешнего контента
 - 📊 Интеграция с Amplitude для аналитики
 - 🚨 Кастомные alert'ы с переходом в настройки
+- 📬 Быстрая интеграция OneSignal для push-уведомлений
 
 ## Установка
 
@@ -186,14 +187,6 @@ AnimationGalaxySPM.trackEvent("game_completed", properties: [
 // Alert для уведомлений с переходом в настройки
 AnimationGalaxySPM.showNotificationsAlert()
 
-// Кастомный alert с настройками
-AnimationGalaxySPM.showNotificationsAlert(
-    title: "Уведомления отключены",
-    message: "Включите уведомления в настройках для получения важных сообщений.",
-    settingsButtonTitle: "Настройки",
-    cancelButtonTitle: "Отмена"
-)
-
 // Универсальный кастомный alert
 AnimationGalaxySPM.showCustomAlert(
     title: "Подтверждение",
@@ -225,10 +218,48 @@ AnimationGalaxySPM.showConfirmationAlert(
 
 - ✅ **Автоматический поиск root view controller** - работает в любом месте приложения
 - ✅ **Переход в настройки** - автоматическое открытие Settings.app
-- ✅ **Настраиваемые тексты** - все тексты можно кастомизировать
 - ✅ **Обработка действий** - callback'и для кнопок
 - ✅ **Безопасность** - проверка доступности view controller'а
 - ✅ **Подробные логи** - отладочная информация в консоли
+
+### Интеграция OneSignal
+
+```swift
+import SwiftUI
+import OneSignalFramework
+import AnimationGalaxySPM
+
+@main
+struct MyApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    var body: some Scene {
+        WindowGroup { ContentView() }
+    }
+}
+
+final class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
+        AnimationGalaxySPM.initializeOneSignal(
+            appId: "YOUR-ONESIGNAL-APP-ID",
+            launchOptions: launchOptions
+        )
+        return true
+    }
+}
+```
+
+#### Что делает менеджер:
+
+- ✅ Инициализирует OneSignal и логинит пользователя с `AnimationGalaxySPM.getUserID()`
+- ✅ Хранит счётчик запусков, чтобы запрашивать разрешение только на первом старте
+- ✅ При последующих запусках проверяет статус разрешения и показывает системный Alert из библиотеки
+- ✅ Автоматически вызывает `OneSignal.login` после получения разрешения
+
+> **Важно:** Добавьте `OneSignalAppID` в Info.plist, включите push capability и пропишите правильный App ID.
 
 ## Требования
 

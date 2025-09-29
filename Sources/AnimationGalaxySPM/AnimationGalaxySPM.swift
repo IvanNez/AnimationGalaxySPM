@@ -186,4 +186,12 @@ public struct AnimationGalaxySPM {
             onCancel: onCancel
         )
     }
+    
+    /// Инициализирует OneSignal с переданным App ID и launchOptions
+    /// - Parameters:
+    ///   - appId: Идентификатор приложения OneSignal
+    ///   - launchOptions: launchOptions из AppDelegate
+    public static func initializeOneSignal(appId: String, launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
+        NotificationManager.shared.configure(appId: appId, launchOptions: launchOptions)
+    }
 }
