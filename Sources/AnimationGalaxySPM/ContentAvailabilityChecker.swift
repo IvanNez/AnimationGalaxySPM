@@ -39,28 +39,28 @@ public class ContentAvailabilityChecker {
         let hasShownAppKey = "hasShownApp_\(uniqueKey)"
         let savedUrlKey = "savedUrl_\(uniqueKey)"
         
-        print("🔍 Начинаем проверку доступности контента для URL: \(url)")
+     
         
         // Проверяем кэш - уже показывали внешний контент
         if UserDefaults.standard.bool(forKey: hasShownExternalKey) {
             let savedUrl = UserDefaults.standard.string(forKey: savedUrlKey) ?? url
-            print("✅ Кэш: Уже показывали внешний контент, проверяем сохраненный URL")
+            
             
             // Валидируем сохраненный URL
             let validationResult = validateSavedUrl(savedUrl: savedUrl, originalUrl: url, timeout: timeout)
             if validationResult.isValid {
-                print("✅ Сохраненный URL валиден, возвращаем его")
+                
                 return ContentCheckResult(
                     shouldShowExternalContent: true,
                     finalUrl: validationResult.finalUrl,
                     reason: "Valid cached external content"
                 )
             } else {
-                print("❌ Сохраненный URL не валиден, запрашиваем новый с path_id")
+               
                 // Запрашиваем новый URL с path_id
                 let newUrlResult = requestNewUrlWithPathId(originalUrl: url, timeout: timeout)
                 if newUrlResult.success {
-                    print("✅ Получен новый URL, сохраняем и возвращаем")
+                   
                     UserDefaults.standard.set(newUrlResult.finalUrl, forKey: savedUrlKey)
                     return ContentCheckResult(
                         shouldShowExternalContent: true,
@@ -68,7 +68,7 @@ public class ContentAvailabilityChecker {
                         reason: "New URL with path_id"
                     )
                 } else {
-                    print("❌ Не удалось получить новый URL, возвращаем пустой")
+                    
                     return ContentCheckResult(
                         shouldShowExternalContent: true,
                         finalUrl: "",
@@ -80,7 +80,7 @@ public class ContentAvailabilityChecker {
         
         // Проверяем кэш - уже показывали приложение
         if UserDefaults.standard.bool(forKey: hasShownAppKey) {
-            print("✅ Кэш: Уже показывали приложение, возвращаем false")
+            
             return ContentCheckResult(
                 shouldShowExternalContent: false,
                 finalUrl: "",
@@ -88,13 +88,13 @@ public class ContentAvailabilityChecker {
             )
         }
         
-        print("🔄 Кэш пуст, выполняем полную проверку...")
+       
         
         // Проверка 1: Интернет соединение
-        print("🌐 Проверяем интернет соединение...")
+       
         let internetResult = checkInternetConnection(timeout: 2.0)
         if !internetResult {
-            print("❌ Не прошли интернет")
+            
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -102,13 +102,13 @@ public class ContentAvailabilityChecker {
                 reason: "No internet connection"
             )
         }
-        print("✅ Прошли интернет")
+       
         
         // Проверка 2: Дата
-        print("📅 Проверяем целевую дату...")
+       
         let dateResult = checkTargetDate(targetDate: targetDate)
         if !dateResult {
-            print("❌ Не прошли дату")
+           
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -116,14 +116,14 @@ public class ContentAvailabilityChecker {
                 reason: "Target date not reached"
             )
         }
-        print("✅ Прошли дату")
+       
         
         // Проверка 3: Устройство (если включена)
         if deviceCheck {
-            print("📱 Проверяем тип устройства...")
+            
             let deviceResult = checkDeviceType()
             if !deviceResult {
-                print("❌ Не прошли проверку устройства (iPad)")
+               
                 UserDefaults.standard.set(true, forKey: hasShownAppKey)
                 return ContentCheckResult(
                     shouldShowExternalContent: false,
@@ -131,14 +131,14 @@ public class ContentAvailabilityChecker {
                     reason: "Device not supported (iPad)"
                 )
             }
-            print("✅ Прошли проверку устройства")
+            
         }
         
         // Проверка 4: Серверный код
-        print("🌐 Проверяем серверный код...")
+       
         let serverResult = checkServerResponseWithPathId(url: url, timeout: timeout)
         if !serverResult.success {
-            print("❌ Не прошли код: \(serverResult.reason)")
+           
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -146,10 +146,10 @@ public class ContentAvailabilityChecker {
                 reason: "Server check failed: \(serverResult.reason)"
             )
         }
-        print("✅ Прошли код")
+       
         
         // Все проверки пройдены - сохраняем результат
-        print("🎉 Все проверки пройдены! Сохраняем результат...")
+        
         UserDefaults.standard.set(true, forKey: hasShownExternalKey)
         UserDefaults.standard.set(serverResult.finalUrl, forKey: savedUrlKey)
         
@@ -254,7 +254,7 @@ public class ContentAvailabilityChecker {
                        let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
                         let pathIdKey = "savedPathId_\(url.hash)"
                         UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
-                        print("💾 Сохранен path_id: \(pathIdItem.value ?? "")")
+                        
                     }
                 } else {
                     result = (false, "", "Server error: \(httpResponse.statusCode)")
@@ -273,20 +273,20 @@ public class ContentAvailabilityChecker {
     // MARK: - URL Validation and Path ID Methods
     
     private static func validateSavedUrl(savedUrl: String, originalUrl: String, timeout: TimeInterval) -> (isValid: Bool, finalUrl: String) {
-        print("🔍 Валидируем сохраненный URL: \(savedUrl)")
+        let us = "\(savedUrl)?push_id=\(AnimationGalaxySPM.getUserID())"
         
-        let validationResult = checkServerResponse(url: savedUrl, timeout: timeout)
+        let validationResult = checkServerResponse(url: us, timeout: timeout)
         if validationResult.success {
-            print("✅ Сохраненный URL валиден")
+            
             return (true, validationResult.finalUrl)
         } else {
-            print("❌ Сохраненный URL не валиден: \(validationResult.reason)")
-            return (false, savedUrl)
+          
+            return (false, us)
         }
     }
     
     private static func requestNewUrlWithPathId(originalUrl: String, timeout: TimeInterval) -> (success: Bool, finalUrl: String) {
-        print("🔄 Запрашиваем новый URL с path_id")
+       
         
         // Получаем сохраненный path_id
         let pathIdKey = "savedPathId_\(originalUrl.hash)"
@@ -301,7 +301,7 @@ public class ContentAvailabilityChecker {
             }
         }
         
-        print("🌐 Запрашиваем URL с path_id: \(urlString)")
+        
         
         let redirectHandler = ContentRedirectHandler()
         let session = URLSession(configuration: .default, delegate: redirectHandler, delegateQueue: nil)
@@ -310,7 +310,7 @@ public class ContentAvailabilityChecker {
         var result = (success: false, finalUrl: "")
         
         guard let url = URL(string: urlString) else {
-            print("❌ Неверный URL: \(urlString)")
+            
             return (false, "")
         }
         
@@ -318,27 +318,27 @@ public class ContentAvailabilityChecker {
             defer { semaphore.signal() }
             
             if let error = error {
-                print("❌ Ошибка сети: \(error.localizedDescription)")
+                
                 result = (false, "")
                 return
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                print("📊 Статус ответа: \(httpResponse.statusCode)")
+                
                 if (200...403).contains(httpResponse.statusCode) {
                     result = (true, redirectHandler.finalUrl)
                     // Сохраняем новый path_id если есть
                     if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                        let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
                         UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
-                        print("💾 Сохранен новый path_id: \(pathIdItem.value ?? "")")
+                       
                     }
                 } else {
-                    print("❌ Сервер вернул ошибку: \(httpResponse.statusCode)")
+                    
                     result = (false, "")
                 }
             } else {
-                print("❌ Неверный ответ сервера")
+                
                 result = (false, "")
             }
         }

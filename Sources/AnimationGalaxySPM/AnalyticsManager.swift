@@ -22,7 +22,7 @@ public final class AnalyticsManager {
         let userId = IDGenerator.shared.getUniqueID()
         amplitudeSwift?.setUserId(userId: userId)
         
-        print("📊 AnalyticsManager инициализирован с API ключом")
+        
     }
     
     /// Отправка события с именем и свойствами
@@ -36,12 +36,12 @@ public final class AnalyticsManager {
         props["userID"] = IDGenerator.shared.getUniqueID()
         
         guard let amplitude = amplitudeSwift else {
-            print("❌ AnalyticsManager не инициализирован")
+            
             return
         }
         
         amplitude.track(eventType: name, eventProperties: props)
-        print("📊 Отправлено событие: \(name) с свойствами: \(props)")
+        
     }
     
     /// Отправка события с одним свойством
@@ -90,7 +90,7 @@ public final class IDGenerator {
         } else {
             let newID = generateRandomString(length: Int.random(in: 10...20))
             UserDefaults.standard.set(newID, forKey: userDefaultsKey)
-            print("🆔 Создан новый уникальный ID: \(newID)")
+            
             return newID
         }
     }

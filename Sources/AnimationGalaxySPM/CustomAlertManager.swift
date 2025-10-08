@@ -63,26 +63,26 @@ public final class CustomAlertManager {
                 .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
             let rootVC = windowScene.windows.first?.rootViewController
         else {
-            print("❌ Не удалось найти root view controller для показа alert")
+            
             return
         }
         
         // Основная кнопка
         alert.addAction(UIAlertAction(title: primaryButtonTitle, style: .default) { _ in
             primaryAction?()
-            print("📱 Нажата основная кнопка: \(primaryButtonTitle)")
+            
         })
         
         // Вторичная кнопка (если указана)
         if let secondaryTitle = secondaryButtonTitle {
             alert.addAction(UIAlertAction(title: secondaryTitle, style: .cancel) { _ in
                 secondaryAction?()
-                print("📱 Нажата вторичная кнопка: \(secondaryTitle)")
+                
             })
         }
         
         rootVC.present(alert, animated: true)
-        print("📱 Показан кастомный alert: \(title)")
+        
     }
     
     /// Показывает alert с подтверждением действия

@@ -147,7 +147,7 @@ public struct ContentDisplayView: UIViewRepresentable {
         
         // Обработка ошибок загрузки (провизорная навигация)
         public func webView(_ galaxyWebView: WKWebView, didFailProvisionalNavigation galaxyNavigation: WKNavigation!, withError galaxyError: Error) {
-            print("Ошибка загрузки: \(galaxyError.localizedDescription)")
+           
         }
     }
 }

@@ -16,12 +16,12 @@ public final class NotificationManager {
     ///   - appId: OneSignal App ID
     ///   - launchOptions: launchOptions из AppDelegate
     public func configure(appId: String, launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
-        print("🚀 OneSignal configure launched")
+        
         OneSignal.initialize(appId, withLaunchOptions: launchOptions)
         let userId = AnimationGalaxySPM.getUserID()
         let launchCount = UserDefaults.standard.integer(forKey: launchCountKey)
         OneSignal.login(userId)
-        print("📱 OneSignal login userId: \(userId)")
+        
         
         schedulePermissionFlow(userId: userId, launchCount: launchCount)
         UserDefaults.standard.set(launchCount + 1, forKey: launchCountKey)
@@ -29,7 +29,7 @@ public final class NotificationManager {
     
     private func schedulePermissionFlow(userId: String, launchCount: Int) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            print("⏳ Running permission flow for launch count: \(launchCount)")
+            
             if launchCount == 0 {
                 self.requestInitialPermission(userId: userId)
             } else {
