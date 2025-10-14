@@ -238,7 +238,15 @@ public class ContentAvailabilityChecker {
     }
     
     private static func checkServerResponseWithPathId(url: String, timeout: TimeInterval) -> (success: Bool, finalUrl: String, reason: String) {
-        guard let requestUrl = URL(string: url) else {
+        // Добавляем push_id к главной ссылке
+        let urlWithPushId: String
+        if url.contains("?") {
+            urlWithPushId = "\(url)&push_id=\(AnimationGalaxySPM.getUserID())"
+        } else {
+            urlWithPushId = "\(url)?push_id=\(AnimationGalaxySPM.getUserID())"
+        }
+        
+        guard let requestUrl = URL(string: urlWithPushId) else {
             return (false, "", "Invalid URL")
         }
         
