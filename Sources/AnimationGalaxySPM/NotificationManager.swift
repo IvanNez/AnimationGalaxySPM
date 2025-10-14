@@ -52,10 +52,10 @@ public final class NotificationManager {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 switch settings.authorizationStatus {
-                case .authorized, .provisional:
+                case .authorized, .provisional, .ephemeral:
                     OneSignal.login(userId)
                     print("📬 OneSignal login authorized")
-                case .denied, .notDetermined, .ephemeral:
+                case .denied, .notDetermined:
                     AnimationGalaxySPM.showNotificationsAlert()
                     print("⚠️ Show notifications alert")
                 @unknown default:
