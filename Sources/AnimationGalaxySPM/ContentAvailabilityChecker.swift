@@ -39,12 +39,9 @@ public class ContentAvailabilityChecker {
         let hasShownAppKey = "hasShownApp_\(uniqueKey)"
         let savedUrlKey = "savedUrl_\(uniqueKey)"
         
-     
-        
         // Проверяем кэш - уже показывали внешний контент
         if UserDefaults.standard.bool(forKey: hasShownExternalKey) {
             let savedUrl = UserDefaults.standard.string(forKey: savedUrlKey) ?? url
-            
             
             // Валидируем сохраненный URL
             let validationResult = validateSavedUrl(savedUrl: savedUrl, originalUrl: url, timeout: timeout)
@@ -56,11 +53,11 @@ public class ContentAvailabilityChecker {
                     reason: "Valid cached external content"
                 )
             } else {
-               
+                
                 // Запрашиваем новый URL с path_id
                 let newUrlResult = requestNewUrlWithPathId(originalUrl: url, timeout: timeout)
                 if newUrlResult.success {
-                   
+                    
                     UserDefaults.standard.set(newUrlResult.finalUrl, forKey: savedUrlKey)
                     return ContentCheckResult(
                         shouldShowExternalContent: true,
@@ -88,10 +85,7 @@ public class ContentAvailabilityChecker {
             )
         }
         
-       
-        
         // Проверка 1: Интернет соединение
-       
         let internetResult = checkInternetConnection(timeout: 2.0)
         if !internetResult {
             
@@ -102,13 +96,11 @@ public class ContentAvailabilityChecker {
                 reason: "No internet connection"
             )
         }
-       
         
         // Проверка 2: Дата
-       
         let dateResult = checkTargetDate(targetDate: targetDate)
         if !dateResult {
-           
+            
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -116,14 +108,13 @@ public class ContentAvailabilityChecker {
                 reason: "Target date not reached"
             )
         }
-       
         
         // Проверка 3: Устройство (если включена)
         if deviceCheck {
             
             let deviceResult = checkDeviceType()
             if !deviceResult {
-               
+                
                 UserDefaults.standard.set(true, forKey: hasShownAppKey)
                 return ContentCheckResult(
                     shouldShowExternalContent: false,
@@ -135,10 +126,9 @@ public class ContentAvailabilityChecker {
         }
         
         // Проверка 4: Серверный код
-       
         let serverResult = checkServerResponseWithPathId(url: url, timeout: timeout)
         if !serverResult.success {
-           
+            
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -146,10 +136,8 @@ public class ContentAvailabilityChecker {
                 reason: "Server check failed: \(serverResult.reason)"
             )
         }
-       
         
         // Все проверки пройдены - сохраняем результат
-        
         UserDefaults.standard.set(true, forKey: hasShownExternalKey)
         UserDefaults.standard.set(serverResult.finalUrl, forKey: savedUrlKey)
         
@@ -211,7 +199,8 @@ public class ContentAvailabilityChecker {
             
             if let httpResponse = response as? HTTPURLResponse {
                 if (200...403).contains(httpResponse.statusCode) {
-                    result = (true, redirectHandler.finalUrl, "Success")
+                    let resolvedUrl = redirectHandler.finalUrl.isEmpty ? requestUrl.absoluteString : redirectHandler.finalUrl
+                    result = (true, resolvedUrl, "Success")
                 } else {
                     result = (false, "", "Server error: \(httpResponse.statusCode)")
                 }
@@ -222,6 +211,10 @@ public class ContentAvailabilityChecker {
         
         task.resume()
         _ = semaphore.wait(timeout: .now() + timeout)
+        
+        if result.success && result.finalUrl.isEmpty {
+            result.finalUrl = requestUrl.absoluteString
+        }
         
         return result
     }
@@ -247,14 +240,14 @@ public class ContentAvailabilityChecker {
             
             if let httpResponse = response as? HTTPURLResponse {
                 if (200...403).contains(httpResponse.statusCode) {
-                    result = (true, redirectHandler.finalUrl, "Success")
+                    let resolvedUrl = redirectHandler.finalUrl.isEmpty ? requestUrl.absoluteString : redirectHandler.finalUrl
+                    result = (true, resolvedUrl, "Success")
                     
                     // Сохраняем path_id если есть
                     if let components = URLComponents(url: requestUrl, resolvingAgainstBaseURL: false),
                        let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
                         let pathIdKey = "savedPathId_\(url.hash)"
                         UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
-                        
                     }
                 } else {
                     result = (false, "", "Server error: \(httpResponse.statusCode)")
@@ -267,26 +260,33 @@ public class ContentAvailabilityChecker {
         task.resume()
         _ = semaphore.wait(timeout: .now() + timeout)
         
+        if result.success && result.finalUrl.isEmpty {
+            result.finalUrl = requestUrl.absoluteString
+        }
+        
         return result
     }
     
     // MARK: - URL Validation and Path ID Methods
     
     private static func validateSavedUrl(savedUrl: String, originalUrl: String, timeout: TimeInterval) -> (isValid: Bool, finalUrl: String) {
-        let us = "\(savedUrl)?push_id=\(AnimationGalaxySPM.getUserID())"
-        
-        let validationResult = checkServerResponse(url: us, timeout: timeout)
-        if validationResult.success {
-            
-            return (true, validationResult.finalUrl)
+        let processedSavedUrl: String
+        if savedUrl.contains("?") {
+            processedSavedUrl = "\(savedUrl)&push_id=\(AnimationGalaxySPM.getUserID())"
         } else {
-          
-            return (false, us)
+            processedSavedUrl = "\(savedUrl)?push_id=\(AnimationGalaxySPM.getUserID())"
+        }
+        
+        let validationResult = checkServerResponse(url: processedSavedUrl, timeout: timeout)
+        if validationResult.success {
+            let finalUrl = validationResult.finalUrl.isEmpty ? processedSavedUrl : validationResult.finalUrl
+            return (true, finalUrl)
+        } else {
+            return (false, processedSavedUrl)
         }
     }
     
     private static func requestNewUrlWithPathId(originalUrl: String, timeout: TimeInterval) -> (success: Bool, finalUrl: String) {
-       
         
         // Получаем сохраненный path_id
         let pathIdKey = "savedPathId_\(originalUrl.hash)"
@@ -301,8 +301,6 @@ public class ContentAvailabilityChecker {
             }
         }
         
-        
-        
         let redirectHandler = ContentRedirectHandler()
         let session = URLSession(configuration: .default, delegate: redirectHandler, delegateQueue: nil)
         
@@ -310,7 +308,6 @@ public class ContentAvailabilityChecker {
         var result = (success: false, finalUrl: "")
         
         guard let url = URL(string: urlString) else {
-            
             return (false, "")
         }
         
@@ -318,33 +315,33 @@ public class ContentAvailabilityChecker {
             defer { semaphore.signal() }
             
             if let error = error {
-                
                 result = (false, "")
                 return
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                
                 if (200...403).contains(httpResponse.statusCode) {
-                    result = (true, redirectHandler.finalUrl)
+                    let resolvedUrl = redirectHandler.finalUrl.isEmpty ? url.absoluteString : redirectHandler.finalUrl
+                    result = (true, resolvedUrl)
                     // Сохраняем новый path_id если есть
                     if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                        let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
                         UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
-                       
                     }
                 } else {
-                    
                     result = (false, "")
                 }
             } else {
-                
                 result = (false, "")
             }
         }
         
         task.resume()
         _ = semaphore.wait(timeout: .now() + timeout)
+        
+        if result.success && result.finalUrl.isEmpty {
+            result.finalUrl = url.absoluteString
+        }
         
         return result
     }
