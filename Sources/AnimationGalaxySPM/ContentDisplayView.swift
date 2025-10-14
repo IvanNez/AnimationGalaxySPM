@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import UIKit
+import StoreKit
 
 /// Конфигурация для отображения веб-контента
 public struct ContentDisplayView: UIViewRepresentable {
@@ -178,6 +179,16 @@ public struct SafeContentDisplayView: View {
             )
             .onAppear {
                 EventTracker.shared.track("WV_LAUNCH")
+                
+                // Запрос оценки при третьем запуске
+                let launchCount = UserDefaults.standard.integer(forKey: "animationGalaxyLaunchCount")
+                if launchCount == 2 {
+                    if let scene = UIApplication.shared
+                        .connectedScenes
+                        .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                        SKStoreReviewController.requestReview(in: scene)
+                    }
+                }
             }
         }
     }
