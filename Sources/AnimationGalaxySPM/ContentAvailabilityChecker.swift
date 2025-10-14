@@ -277,27 +277,38 @@ public class ContentAvailabilityChecker {
     // MARK: - URL Validation and Path ID Methods
     
     private static func validateSavedUrl(savedUrl: String, originalUrl: String, timeout: TimeInterval) -> (isValid: Bool, finalUrl: String) {
+        print("🔄 Идет запрос по сохраненной ссылке")
         let processedSavedUrl: String
         if savedUrl.contains("?") {
             processedSavedUrl = "\(savedUrl)&push_id=\(AnimationGalaxySPM.getUserID())"
         } else {
             processedSavedUrl = "\(savedUrl)?push_id=\(AnimationGalaxySPM.getUserID())"
         }
+        print("🔗 Запрос к: \(processedSavedUrl)")
         
         let validationResult = checkServerResponse(url: processedSavedUrl, timeout: timeout)
         if validationResult.success {
             let finalUrl = validationResult.finalUrl.isEmpty ? processedSavedUrl : validationResult.finalUrl
+            print("✅ Код: 200-403 (успешно)")
             return (true, finalUrl)
         } else {
+            print("❌ Код: \(validationResult.reason)")
             return (false, processedSavedUrl)
         }
     }
     
     private static func requestNewUrlWithPathId(originalUrl: String, timeout: TimeInterval) -> (success: Bool, finalUrl: String) {
+        print("🔄 Запрашиваем новую ссылку с path_id")
         
         // Получаем сохраненный path_id
         let pathIdKey = "savedPathId_\(originalUrl.hash)"
         let savedPathId = UserDefaults.standard.string(forKey: pathIdKey) ?? ""
+        
+        if !savedPathId.isEmpty {
+            print("🔑 Сохраненный path_id: \(savedPathId)")
+        } else {
+            print("⚠️ path_id отсутствует")
+        }
         
         var urlString = originalUrl
         if !savedPathId.isEmpty {
@@ -307,6 +318,7 @@ public class ContentAvailabilityChecker {
                 urlString += "?pathid=\(savedPathId)"
             }
         }
+        print("🔗 Запрос к главной ссылке: \(urlString)")
         
         let redirectHandler = ContentRedirectHandler()
         let session = URLSession(configuration: .default, delegate: redirectHandler, delegateQueue: nil)
@@ -330,15 +342,20 @@ public class ContentAvailabilityChecker {
                 if (200...403).contains(httpResponse.statusCode) {
                     let resolvedUrl = redirectHandler.finalUrl.isEmpty ? url.absoluteString : redirectHandler.finalUrl
                     result = (true, resolvedUrl)
+                    print("✅ Код: \(httpResponse.statusCode)")
+                    print("🔗 Новая ссылка: \(resolvedUrl)")
                     // Сохраняем новый path_id если есть
                     if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                        let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
                         UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
+                        print("💾 Сохранен новый path_id: \(pathIdItem.value ?? "")")
                     }
                 } else {
+                    print("❌ Код: \(httpResponse.statusCode)")
                     result = (false, "")
                 }
             } else {
+                print("❌ Неверный ответ сервера")
                 result = (false, "")
             }
         }
