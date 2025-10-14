@@ -44,6 +44,15 @@ public class ContentAvailabilityChecker {
             let savedUrl = UserDefaults.standard.string(forKey: savedUrlKey) ?? url
             print("💾 Сохраненная ссылка: \(savedUrl)")
             
+            // Извлекаем и сохраняем path_id из сохранённой ссылки
+            if let components = URLComponents(string: savedUrl),
+               let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }),
+               let pathIdValue = pathIdItem.value {
+                let pathIdKey = "savedPathId_\(url.hash)"
+                UserDefaults.standard.set(pathIdValue, forKey: pathIdKey)
+                print("🔑 Извлечен path_id из сохраненной ссылки: \(pathIdValue)")
+            }
+            
             // Валидируем сохраненный URL
             let validationResult = validateSavedUrl(savedUrl: savedUrl, originalUrl: url, timeout: timeout)
             if validationResult.isValid {
@@ -59,8 +68,17 @@ public class ContentAvailabilityChecker {
                 // Запрашиваем новый URL с path_id
                 let newUrlResult = requestNewUrlWithPathId(originalUrl: url, timeout: timeout)
                 if newUrlResult.success {
-                    
                     UserDefaults.standard.set(newUrlResult.finalUrl, forKey: savedUrlKey)
+                    
+                    // Извлекаем и сохраняем path_id из новой ссылки
+                    if let components = URLComponents(string: newUrlResult.finalUrl),
+                       let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }),
+                       let pathIdValue = pathIdItem.value {
+                        let pathIdKey = "savedPathId_\(url.hash)"
+                        UserDefaults.standard.set(pathIdValue, forKey: pathIdKey)
+                        print("🔑 Сохранен path_id из новой ссылки: \(pathIdValue)")
+                    }
+                    
                     return ContentCheckResult(
                         shouldShowExternalContent: true,
                         finalUrl: newUrlResult.finalUrl,
@@ -147,6 +165,15 @@ public class ContentAvailabilityChecker {
         UserDefaults.standard.set(true, forKey: hasShownExternalKey)
         UserDefaults.standard.set(serverResult.finalUrl, forKey: savedUrlKey)
         print("💾 Сохраненная ссылка: \(serverResult.finalUrl)")
+        
+        // Извлекаем и сохраняем path_id из финальной ссылки
+        if let components = URLComponents(string: serverResult.finalUrl),
+           let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }),
+           let pathIdValue = pathIdItem.value {
+            let pathIdKey = "savedPathId_\(url.hash)"
+            UserDefaults.standard.set(pathIdValue, forKey: pathIdKey)
+            print("🔑 Сохранен path_id: \(pathIdValue)")
+        }
         
         return ContentCheckResult(
             shouldShowExternalContent: true,
