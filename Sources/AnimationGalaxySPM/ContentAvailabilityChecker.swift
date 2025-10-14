@@ -42,11 +42,13 @@ public class ContentAvailabilityChecker {
         // Проверяем кэш - уже показывали внешний контент
         if UserDefaults.standard.bool(forKey: hasShownExternalKey) {
             let savedUrl = UserDefaults.standard.string(forKey: savedUrlKey) ?? url
+            print("💾 Сохраненная ссылка: \(savedUrl)")
             
             // Валидируем сохраненный URL
             let validationResult = validateSavedUrl(savedUrl: savedUrl, originalUrl: url, timeout: timeout)
             if validationResult.isValid {
-                
+                print("✅ Прошли код (сохраненная ссылка валидна)")
+                print("🔗 Ссылка: \(validationResult.finalUrl)")
                 return ContentCheckResult(
                     shouldShowExternalContent: true,
                     finalUrl: validationResult.finalUrl,
@@ -88,7 +90,7 @@ public class ContentAvailabilityChecker {
         // Проверка 1: Интернет соединение
         let internetResult = checkInternetConnection(timeout: 2.0)
         if !internetResult {
-            
+            print("❌ Не прошли интернет")
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -96,11 +98,12 @@ public class ContentAvailabilityChecker {
                 reason: "No internet connection"
             )
         }
+        print("✅ Прошли интернет")
         
         // Проверка 2: Дата
         let dateResult = checkTargetDate(targetDate: targetDate)
         if !dateResult {
-            
+            print("❌ Не прошли дату")
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -108,6 +111,7 @@ public class ContentAvailabilityChecker {
                 reason: "Target date not reached"
             )
         }
+        print("✅ Прошли дату")
         
         // Проверка 3: Устройство (если включена)
         if deviceCheck {
@@ -128,7 +132,7 @@ public class ContentAvailabilityChecker {
         // Проверка 4: Серверный код
         let serverResult = checkServerResponseWithPathId(url: url, timeout: timeout)
         if !serverResult.success {
-            
+            print("❌ Не прошли код")
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -136,10 +140,13 @@ public class ContentAvailabilityChecker {
                 reason: "Server check failed: \(serverResult.reason)"
             )
         }
+        print("✅ Прошли код")
+        print("🔗 Ссылка: \(serverResult.finalUrl)")
         
         // Все проверки пройдены - сохраняем результат
         UserDefaults.standard.set(true, forKey: hasShownExternalKey)
         UserDefaults.standard.set(serverResult.finalUrl, forKey: savedUrlKey)
+        print("💾 Сохраненная ссылка: \(serverResult.finalUrl)")
         
         return ContentCheckResult(
             shouldShowExternalContent: true,
