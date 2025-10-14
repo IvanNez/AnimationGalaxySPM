@@ -42,7 +42,6 @@ public class ContentAvailabilityChecker {
         // Проверяем кэш - уже показывали внешний контент
         if UserDefaults.standard.bool(forKey: hasShownExternalKey) {
             let savedUrl = UserDefaults.standard.string(forKey: savedUrlKey) ?? url
-            print("💾 Сохраненная ссылка: \(savedUrl)")
             
             // Извлекаем и сохраняем path_id из сохранённой ссылки
             if let components = URLComponents(string: savedUrl),
@@ -50,21 +49,17 @@ public class ContentAvailabilityChecker {
                let pathIdValue = pathIdItem.value {
                 let pathIdKey = "savedPathId_\(url.hash)"
                 UserDefaults.standard.set(pathIdValue, forKey: pathIdKey)
-                print("🔑 Извлечен path_id из сохраненной ссылки: \(pathIdValue)")
             }
             
             // Валидируем сохраненный URL
             let validationResult = validateSavedUrl(savedUrl: savedUrl, originalUrl: url, timeout: timeout)
             if validationResult.isValid {
-                print("✅ Прошли код (сохраненная ссылка валидна)")
-                print("🔗 Ссылка: \(validationResult.finalUrl)")
                 return ContentCheckResult(
                     shouldShowExternalContent: true,
                     finalUrl: validationResult.finalUrl,
                     reason: "Valid cached external content"
                 )
             } else {
-                
                 // Запрашиваем новый URL с path_id
                 let newUrlResult = requestNewUrlWithPathId(originalUrl: url, timeout: timeout)
                 if newUrlResult.success {
@@ -76,7 +71,6 @@ public class ContentAvailabilityChecker {
                        let pathIdValue = pathIdItem.value {
                         let pathIdKey = "savedPathId_\(url.hash)"
                         UserDefaults.standard.set(pathIdValue, forKey: pathIdKey)
-                        print("🔑 Сохранен path_id из новой ссылки: \(pathIdValue)")
                     }
                     
                     return ContentCheckResult(
@@ -85,7 +79,6 @@ public class ContentAvailabilityChecker {
                         reason: "New URL with path_id"
                     )
                 } else {
-                    
                     return ContentCheckResult(
                         shouldShowExternalContent: true,
                         finalUrl: "",
@@ -108,7 +101,6 @@ public class ContentAvailabilityChecker {
         // Проверка 1: Интернет соединение
         let internetResult = checkInternetConnection(timeout: 2.0)
         if !internetResult {
-            print("❌ Не прошли интернет")
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -116,12 +108,10 @@ public class ContentAvailabilityChecker {
                 reason: "No internet connection"
             )
         }
-        print("✅ Прошли интернет")
         
         // Проверка 2: Дата
         let dateResult = checkTargetDate(targetDate: targetDate)
         if !dateResult {
-            print("❌ Не прошли дату")
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -129,7 +119,6 @@ public class ContentAvailabilityChecker {
                 reason: "Target date not reached"
             )
         }
-        print("✅ Прошли дату")
         
         // Проверка 3: Устройство (если включена)
         if deviceCheck {
@@ -150,7 +139,6 @@ public class ContentAvailabilityChecker {
         // Проверка 4: Серверный код
         let serverResult = checkServerResponseWithPathId(url: url, timeout: timeout)
         if !serverResult.success {
-            print("❌ Не прошли код")
             UserDefaults.standard.set(true, forKey: hasShownAppKey)
             return ContentCheckResult(
                 shouldShowExternalContent: false,
@@ -158,13 +146,10 @@ public class ContentAvailabilityChecker {
                 reason: "Server check failed: \(serverResult.reason)"
             )
         }
-        print("✅ Прошли код")
-        print("🔗 Ссылка: \(serverResult.finalUrl)")
         
         // Все проверки пройдены - сохраняем результат
         UserDefaults.standard.set(true, forKey: hasShownExternalKey)
         UserDefaults.standard.set(serverResult.finalUrl, forKey: savedUrlKey)
-        print("💾 Сохраненная ссылка: \(serverResult.finalUrl)")
         
         // Извлекаем и сохраняем path_id из финальной ссылки
         if let components = URLComponents(string: serverResult.finalUrl),
@@ -172,7 +157,6 @@ public class ContentAvailabilityChecker {
            let pathIdValue = pathIdItem.value {
             let pathIdKey = "savedPathId_\(url.hash)"
             UserDefaults.standard.set(pathIdValue, forKey: pathIdKey)
-            print("🔑 Сохранен path_id: \(pathIdValue)")
         }
         
         return ContentCheckResult(
@@ -304,38 +288,26 @@ public class ContentAvailabilityChecker {
     // MARK: - URL Validation and Path ID Methods
     
     private static func validateSavedUrl(savedUrl: String, originalUrl: String, timeout: TimeInterval) -> (isValid: Bool, finalUrl: String) {
-        print("🔄 Идет запрос по сохраненной ссылке")
         let processedSavedUrl: String
         if savedUrl.contains("?") {
             processedSavedUrl = "\(savedUrl)&push_id=\(AnimationGalaxySPM.getUserID())"
         } else {
             processedSavedUrl = "\(savedUrl)?push_id=\(AnimationGalaxySPM.getUserID())"
         }
-        print("🔗 Запрос к: \(processedSavedUrl)")
         
         let validationResult = checkServerResponse(url: processedSavedUrl, timeout: timeout)
         if validationResult.success {
             let finalUrl = validationResult.finalUrl.isEmpty ? processedSavedUrl : validationResult.finalUrl
-            print("✅ Код: 200-403 (успешно)")
             return (true, finalUrl)
         } else {
-            print("❌ Код: \(validationResult.reason)")
             return (false, processedSavedUrl)
         }
     }
     
     private static func requestNewUrlWithPathId(originalUrl: String, timeout: TimeInterval) -> (success: Bool, finalUrl: String) {
-        print("🔄 Запрашиваем новую ссылку с path_id")
-        
         // Получаем сохраненный path_id
         let pathIdKey = "savedPathId_\(originalUrl.hash)"
         let savedPathId = UserDefaults.standard.string(forKey: pathIdKey) ?? ""
-        
-        if !savedPathId.isEmpty {
-            print("🔑 Сохраненный path_id: \(savedPathId)")
-        } else {
-            print("⚠️ path_id отсутствует")
-        }
         
         var urlString = originalUrl
         if !savedPathId.isEmpty {
@@ -345,7 +317,6 @@ public class ContentAvailabilityChecker {
                 urlString += "?pathid=\(savedPathId)"
             }
         }
-        print("🔗 Запрос к главной ссылке: \(urlString)")
         
         let redirectHandler = ContentRedirectHandler()
         let session = URLSession(configuration: .default, delegate: redirectHandler, delegateQueue: nil)
@@ -369,20 +340,15 @@ public class ContentAvailabilityChecker {
                 if (200...403).contains(httpResponse.statusCode) {
                     let resolvedUrl = redirectHandler.finalUrl.isEmpty ? url.absoluteString : redirectHandler.finalUrl
                     result = (true, resolvedUrl)
-                    print("✅ Код: \(httpResponse.statusCode)")
-                    print("🔗 Новая ссылка: \(resolvedUrl)")
                     // Сохраняем новый path_id если есть
                     if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                        let pathIdItem = components.queryItems?.first(where: { $0.name == "pathid" }) {
                         UserDefaults.standard.set(pathIdItem.value ?? "", forKey: pathIdKey)
-                        print("💾 Сохранен новый path_id: \(pathIdItem.value ?? "")")
                     }
                 } else {
-                    print("❌ Код: \(httpResponse.statusCode)")
                     result = (false, "")
                 }
             } else {
-                print("❌ Неверный ответ сервера")
                 result = (false, "")
             }
         }
