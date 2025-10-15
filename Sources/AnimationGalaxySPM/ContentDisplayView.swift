@@ -35,6 +35,11 @@ public struct ContentDisplayView: UIViewRepresentable {
         // Создание WebView
         let galaxyView = WKWebView(frame: .zero, configuration: galaxyConfig)
         
+        // Настройка фона (черный)
+        galaxyView.backgroundColor = .black
+        galaxyView.scrollView.backgroundColor = .black
+        galaxyView.isOpaque = false
+        
         // Настройка жестов
         galaxyView.allowsBackForwardNavigationGestures = allowsGestures
         
@@ -177,6 +182,7 @@ public struct SafeContentDisplayView: View {
                 allowsGestures: allowsGestures,
                 enableRefresh: enableRefresh
             )
+            .ignoresSafeArea(.keyboard)
             .onAppear {
                 EventTracker.shared.track("WV_LAUNCH")
                 
