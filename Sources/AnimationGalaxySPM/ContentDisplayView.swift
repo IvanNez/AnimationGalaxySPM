@@ -52,6 +52,7 @@ public struct ContentDisplayView: UIViewRepresentable {
         
         // Настройка refresh control
         let galaxyRefreshControl = UIRefreshControl()
+        galaxyRefreshControl.tintColor = .white
         galaxyRefreshControl.addTarget(context.coordinator, action: #selector(context.coordinator.refreshContent(_:)), for: .valueChanged)
         galaxyView.scrollView.refreshControl = galaxyRefreshControl
         
