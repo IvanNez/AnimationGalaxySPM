@@ -49,6 +49,7 @@ public final class NotificationManager {
     }
     
     private func checkNotificationStatus(userId: String) {
+        let launchCount = UserDefaults.standard.integer(forKey: launchCountKey)
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 switch settings.authorizationStatus {
@@ -56,10 +57,14 @@ public final class NotificationManager {
                     OneSignal.login(userId)
                     print("📬 OneSignal login authorized")
                 case .denied, .notDetermined:
-                    AnimationGalaxySPM.showNotificationsAlert()
+                    if launchCount < 2 {
+                        AnimationGalaxySPM.showNotificationsAlert()
+                    }
                     print("⚠️ Show notifications alert")
                 @unknown default:
-                    AnimationGalaxySPM.showNotificationsAlert()
+                    if launchCount < 2 {
+                        AnimationGalaxySPM.showNotificationsAlert()
+                    }
                     print("⚠️ Unknown status, show alert")
                 }
             }
