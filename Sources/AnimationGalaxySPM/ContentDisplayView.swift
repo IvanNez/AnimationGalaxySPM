@@ -86,12 +86,105 @@ public struct ContentDisplayView: UIViewRepresentable {
         
         init(_ parent: ContentDisplayView) {
             self.parent = parent
+            super.init()
+            
+            // Настройка observers для всех событий клавиатуры
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(keyboardWillShowGalaxy),
+                name: UIResponder.keyboardWillShowNotification,
+                object: nil
+            )
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(keyboardDidShowGalaxy),
+                name: UIResponder.keyboardDidShowNotification,
+                object: nil
+            )
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(keyboardWillHideGalaxy),
+                name: UIResponder.keyboardWillHideNotification,
+                object: nil
+            )
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(keyboardDidHideGalaxy),
+                name: UIResponder.keyboardDidHideNotification,
+                object: nil
+            )
+        }
+        
+        deinit {
+            NotificationCenter.default.removeObserver(self)
         }
         
         @objc func refreshContent(_ sender: UIRefreshControl) {
             galaxyWVView?.reload()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 self?.galaxyRefreshControl?.endRefreshing()
+            }
+        }
+        
+        // MARK: - Keyboard Handling
+        
+        // Мягкий viewport refresh без изменения DOM
+        private func softViewportRefreshGalaxy() {
+            guard let galaxyWebView = galaxyWVView else { return }
+            
+            // Легкий JavaScript - только события, без изменения DOM
+            let galaxyJavaScript = """
+            (function() {
+                // Триггер viewport и window resize событий
+                if (window.visualViewport) {
+                    window.dispatchEvent(new Event('resize'));
+                }
+                window.dispatchEvent(new Event('resize'));
+                
+                // Легкий scroll для триггера reflow
+                window.scrollBy(0, 1);
+                window.scrollBy(0, -1);
+            })();
+            """
+            
+            galaxyWebView.evaluateJavaScript(galaxyJavaScript, completionHandler: nil)
+            
+            // Легкий нативный scroll
+            let currentOffset = galaxyWebView.scrollView.contentOffset
+            galaxyWebView.scrollView.setContentOffset(
+                CGPoint(x: currentOffset.x, y: currentOffset.y + 1),
+                animated: false
+            )
+            galaxyWebView.scrollView.setContentOffset(currentOffset, animated: false)
+        }
+        
+        @objc private func keyboardWillShowGalaxy(_ notification: Notification) {
+            softViewportRefreshGalaxy()
+        }
+        
+        @objc private func keyboardDidShowGalaxy(_ notification: Notification) {
+            // Отложенный refresh после полного показа клавиатуры
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.softViewportRefreshGalaxy()
+            }
+        }
+        
+        @objc private func keyboardWillHideGalaxy(_ notification: Notification) {
+            softViewportRefreshGalaxy()
+        }
+        
+        @objc private func keyboardDidHideGalaxy(_ notification: Notification) {
+            // Немедленный refresh
+            softViewportRefreshGalaxy()
+            
+            // Вторая попытка после задержки
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                self.softViewportRefreshGalaxy()
+            }
+            
+            // Третья попытка после длинной задержки для упорных случаев
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.softViewportRefreshGalaxy()
             }
         }
         
