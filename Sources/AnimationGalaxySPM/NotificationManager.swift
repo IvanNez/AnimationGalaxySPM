@@ -33,7 +33,7 @@ public final class NotificationManager {
             if launchCount == 0 {
                 self.requestInitialPermission(userId: userId)
             } else {
-                self.checkNotificationStatus(userId: userId)
+                self.checkNotificationStatus(userId: userId, launchCount: launchCount)
             }
         }
     }
@@ -48,8 +48,7 @@ public final class NotificationManager {
         }
     }
     
-    private func checkNotificationStatus(userId: String) {
-        let launchCount = UserDefaults.standard.integer(forKey: launchCountKey)
+    private func checkNotificationStatus(userId: String, launchCount: Int) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 switch settings.authorizationStatus {
