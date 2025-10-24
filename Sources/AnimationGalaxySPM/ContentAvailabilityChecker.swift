@@ -30,7 +30,7 @@ public class ContentAvailabilityChecker {
         url: String,
         targetDate: Date,
         deviceCheck: Bool = true,
-        timeout: TimeInterval = 10.0,
+        timeout: TimeInterval = 12.0,
         cacheKey: String? = nil
     ) -> ContentCheckResult {
         
